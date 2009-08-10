@@ -59,10 +59,10 @@ isnt(
         my $call2_1 = &{"$method\_1"};
 
         # Cache remains:
-        is $call1, $call2;
+        is $call1, $call2, "is $method";
 
         # Cache is expired:
-        isnt $call1_1, $call2_1;
+        isnt $call1_1, $call2_1, "isnt $method\_1";
 
     }
 }
@@ -77,7 +77,7 @@ isnt(
     my @dclone1 = @{ dclone(\@origin1) };
 
     # The rule of the key is 'LIST' :
-    # When the reference is the same address, the same value is returned. 
+    # When the reference is the same address, the same value is returned.
     is(
         Dummy::method0(@origin1),
         Dummy::method0(@origin1),
