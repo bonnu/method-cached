@@ -12,20 +12,18 @@ __PACKAGE__->export_rule(qw/SELF_CODED SERIALIZE/);
 sub SELF_CODED {
     my ($method_name, $args) = @_;
     our $ENCODER ||= JSON::XS->new->convert_blessed(1);
-    *UNIVERSAL::TO_JSON = sub { Storable::nfreeze \@_ };
+    local *UNIVERSAL::TO_JSON = sub { Storable::nfreeze \@_ };
     my $json = $ENCODER->encode($args->[0]);
-    undef *UNIVERSAL::TO_JSON;
     $args->[0] = Digest::SHA::sha1_base64($json);
     return;
 }
 
 sub SERIALIZE {
     my ($method_name, $args) = @_;
-    local $^W = 0;
     our $ENCODER ||= JSON::XS->new->convert_blessed(1);
-    *UNIVERSAL::TO_JSON = sub { Storable::nfreeze \@_ };
+    local $^W = 0;
+    local *UNIVERSAL::TO_JSON = sub { Storable::nfreeze \@_ };
     my $json = $ENCODER->encode($args);
-    undef *UNIVERSAL::TO_JSON;
     $method_name . Digest::SHA::sha1_base64($json);
 }
 

@@ -61,9 +61,6 @@ use Method::Cached
 
 package main;
 
-# use Dummy;
-Dummy->import;
-
 use Benchmark qw/cmpthese timethese/;
 
 my $num = 13;
