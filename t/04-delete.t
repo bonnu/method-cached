@@ -15,7 +15,7 @@ use Test::More 'no_plan';
 }
 
 {
-    use Method::Cached;
+    use Method::Cached::Manager;
 
     # use Dummy::DeleteTest;
     Dummy::DeleteTest->import;
@@ -26,7 +26,7 @@ use Test::More 'no_plan';
     my $value1 = Dummy::DeleteTest::echo($param1, $param2);
     my $value2 = Dummy::DeleteTest::echo($param1, $param2);
     
-    Method::Cached->delete('Dummy::DeleteTest::echo', $param1, $param2);
+    Method::Cached::Manager->delete('Dummy::DeleteTest::echo', $param1, $param2);
     
     my $value3 = Dummy::DeleteTest::echo($param1, $param2);
 

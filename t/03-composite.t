@@ -7,11 +7,11 @@ AT_STARTUP_SCRIPT :
 {
     BEGIN {
         use strict;
-        use Method::Cached;
+        use Method::Cached::Manager;
 
-        Method::Cached->default_domain({
-            storage_class => 'Cache::FastMmap',
-            storage_args  => [],
+        Method::Cached::Manager->default_domain({
+            class => 'Cache::FastMmap',
+            args  => [],
         });
     }
 }
