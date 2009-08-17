@@ -1,5 +1,7 @@
 use inc::Module::Install;
 
+perl_version_from 'lib/Method/Cached.pm';
+
 name 'Method-Cached';
 
 all_from 'lib/Method/Cached.pm';

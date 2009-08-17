@@ -1,12 +1,13 @@
 package Method::Cached;
 
+use 5.008_001;
 use strict;
 use warnings;
 use Sub::Attribute;
 use Method::Cached::Manager;
 use Method::Cached::KeyRule;
 
-our $VERSION = '0.05_01';
+our $VERSION = '0.05';
 
 sub import {
     my $class  = shift;
