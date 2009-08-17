@@ -213,11 +213,11 @@ This setting is shared on memory management in perl.
 
 =over 4
 
-=item B<import ('-default' => {}, '-domains' => {})>
+=item B<import ('-default' =E<gt> {}, '-domains' =E<gt> {})>
 
-=item B<default_domain ( { class => CLASS_NAME, args => CLASS_ARGS } )>
+=item B<default_domain ( { class =E<gt> CLASS_NAME, args =E<gt> CLASS_ARGS } )>
 
-=item B<set_domain ( DOMAIN_NAME => { class => CLASS_NAME, args => CLASS_ARGS } )>
+=item B<set_domain ( DOMAIN_NAME =E<gt> { class =E<gt> CLASS_NAME, args =E<gt> CLASS_ARGS } )>
 
 =item B<get_domain ( DOMAIN_NAME )>
 
