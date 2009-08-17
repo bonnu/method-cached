@@ -6,7 +6,7 @@ use Sub::Attribute;
 use Method::Cached::Manager;
 use Method::Cached::KeyRule;
 
-our $VERSION = '0.05_1';
+our $VERSION = '0.05_01';
 
 sub import {
     my $class  = shift;
@@ -15,20 +15,20 @@ sub import {
     return if $caller->isa(__PACKAGE__);
     {
         no strict 'refs';
-        unshift @{$caller . '::ISA'}, __PACKAGE__;
+        push @{$caller . '::ISA'}, __PACKAGE__;
     }
 }
 
 sub Cached :ATTR_SUB {
     my ($package, $sym_ref, $code_ref, $attr, $args_code) = @_;
     my $name = $package . '::' . *{$sym_ref}{NAME};
-    my @args = eval(qq/
+    my @args = defined $args_code ? eval(<<__EVAL__) : (); ## no critic
         package $package;
         no strict 'subs';
         no warnings;
         local \$SIG{__WARN__} = sub{ die };
         ($args_code)
-    /) if defined $args_code;
+__EVAL__
     Method::Cached::Manager->set_method_setting($name, $attr, @args);
     {
         no strict 'refs';
@@ -67,7 +67,7 @@ __END__
 
 =head1 NAME
 
-Method::Cached
+Method::Cached - The return value of the method is cached to your storage
 
 =head1 SYNOPSIS
 
@@ -95,6 +95,77 @@ Method::Cached offers the following mechanisms:
 
 The return value of the method is stored in storage, and
 the value stored when being execute it next time is returned.
+
+=head2 SETTING OF CACHED DOMAIN
+
+In beginning logic or the start-up script:
+
+ use Method::Cached::Manager
+     -default => { class => 'Cache::FastMmap' },
+     -domains => {
+         'some-namespace' => { class => 'Cache::Memcached::Fast', args => [ ... ] },
+     },
+ ;
+
+For more documentation on setting of cached domain, see L<Method::Cached::Manager>.
+
+=head2 DEFINITION OF METHODS
+
+This function is mounting used as an attribute of the method.
+
+=over 4
+
+=item B<:Cached ( DOMAIN_NAME, EXPIRES, [, KEY_RULE, ...] )>
+
+The cached rule is defined specifying the domain name.
+
+ sub message :Cached('some-namespace', 60 * 5, LIST) { ... }
+
+=item B<:Cached ( EXPIRES, [, KEY_RULE, ...] )>
+
+When the domain name is omitted, the domain of default is used.
+
+ sub message :Cached(60 * 5, LIST) { ... }
+
+=back
+
+=head2 RULE TO GENERATE KEY
+
+=over 4
+
+=item B<LIST>
+
+=item B<HASH>
+
+=item B<SELF_SHIFT>
+
+=item B<PER_OBJECT>
+
+=back
+
+=head2 OPTIONAL, RULE TO GENERATE KEY
+
+ use Method::Cached::KeyRule::Serialize;
+
+=over 4
+
+=item B<SERIALIZE>
+
+=item B<SELF_CODED>
+
+=back
+
+=head1 METHODS
+
+=over 4
+
+=item B<default_domain ($setting)>
+
+=item B<set_domain (%domain_settings)>
+
+=item B<get_domain ($domain_name)>
+
+=back
 
 =head1 AUTHOR
 

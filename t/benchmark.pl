@@ -4,24 +4,24 @@ use strict;
 use warnings;
 use FindBin::libs;
 
-use Method::Cached
+use Method::Cached::Manager
     -default => {
-        storage_class => 'Cache::Memcached::Fast',
-        storage_args  => [
+        class => 'Cache::Memcached::Fast',
+        args  => [
             { servers    => [qw/ 127.0.0.1:11211 /] },
         ],
     },
     -domains => {
         'memcached-fast' => {
-            storage_class => 'Cache::Memcached::Fast',
-            storage_args  => [
+            class => 'Cache::Memcached::Fast',
+            args  => [
                 { servers    => [qw/ 127.0.0.1:11211 /] },
             ],
             key_rule      => 'LIST', # SERIALIZE / LIST
         },
         'fastmmap'       => {
-            storage_class => 'Cache::FastMmap',
-            storage_args  => [
+            class => 'Cache::FastMmap',
+            args  => [
                 share_file     => '/tmp/fastmmap.bin',
                 unlink_on_exit => 1,
             ],

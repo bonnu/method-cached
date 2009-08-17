@@ -10,6 +10,12 @@ my %METHOD;
 my $DEFAULT_DOMAIN = { class  => 'Cache::FastMmap' };
 my %ATTR_PARSER    = ( Cached => \&_parse_attr_args );
 
+{
+    no warnings 'once';
+    *set_domain = \&set_domain_setting;
+    *get_domain = \&get_domain_setting;
+}
+
 sub import {
     my ($class, %args) = @_;
     if (exists $args{-domains} && defined $args{-domains}) {
@@ -114,12 +120,6 @@ sub delete {
     }
 }
 
-{
-    no warnings 'once';
-    *set_domain = \&set_domain_setting;
-    *get_domain = \&get_domain_setting;
-}
-
 sub set_attr_parser {
     my ($class, $attr, $parser) = @_;
     $ATTR_PARSER{$attr} = $parser;
@@ -161,3 +161,94 @@ sub _inspect_storage_class {
 1;
 
 __END__
+
+=head1 NAME
+
+Method::Cached::Manager - Storage for cache used in Method::Cached is managed
+
+=head1 SYNOPSIS
+
+=head2 SETTING OF CACHED DOMAIN
+
+In beginning logic or the start-up script:
+
+ use Method::Cached::Manager;
+ 
+ Method::Cached::Manager->default_domain({
+     class => 'Cache::FastMmap',
+ });
+ 
+ Method::Cached::Manager->set_domain(
+     'some-namespace' => {
+         class => 'Cache::Memcached::Fast',
+         args  => [
+             {
+                 # Parameter of constructor of class that uses it for cashe
+                 servers => [ '192.168.254.2:11211', '192.168.254.3:11211' ],
+                 ...
+             },
+         ],
+     },
+ );
+ 
+ or
+ 
+ use Method::Cached::Manager
+     -default => { class => 'Cache::FastMmap' },
+     -domains => {
+         'some-namespace' => { class => 'Cache::Memcached::Fast', args => [ ... ] },
+     },
+ ;
+
+=head1 DESCRIPTION
+
+Storage for cache used in Method::Cached is managed.
+
+Cache used by default when not specifying it and
+cache that can be used by specifying the domain can be defined.
+
+This setting is shared on memory management in perl.
+
+=head1 METHODS
+
+=over 4
+
+=item B<import ('-default' => {}, '-domains' => {})>
+
+=item B<default_domain ( { class => CLASS_NAME, args => CLASS_ARGS } )>
+
+=item B<set_domain ( DOMAIN_NAME => { class => CLASS_NAME, args => CLASS_ARGS } )>
+
+=item B<get_domain ( DOMAIN_NAME )>
+
+=item B<delete ( METHOD_FQN, METHOD_ARGS [, ...] )>
+
+When it is defined in the package as follows:
+
+ package Foo::Bar;
+ use Method::Cached;
+ sub foo_bar :Cached(60 * 30, [HASH]) { ... }
+
+This method is used as follows:
+
+ Foo::Bar::foo_bar(args1 => 1, args2 => 2);
+
+To erase a cache of this method:
+
+ Method::Cached::Manager->delete(
+     'Foo::Bar::foo_bar',       # fqn
+     (args1 => 1, args2 => 2),  # hash-args
+ );
+
+=back
+
+=head1 AUTHOR
+
+Satoshi Ohkubo E<lt>s.ohkubo@gmail.comE<gt>
+
+=head1 LICENSE
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut

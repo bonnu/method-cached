@@ -5,12 +5,12 @@ name 'Method-Cached';
 all_from 'lib/Method/Cached.pm';
 
 my %requires = (
-    'Attribute::Handlers'   => 0.79,
     'Cache::FastMmap'       => 1.28,
     'Digest::SHA'           => 5.47,
     'JSON::XS'              => 2.2222,
     'MIME::Base64'          => 3.07,
     'Storable'              => 2.18,
+    'Sub::Attribute'        => 0.02,
     'UNIVERSAL::require'    => 0.11,
 );
 
