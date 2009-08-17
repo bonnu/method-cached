@@ -7,7 +7,7 @@ use Sub::Attribute;
 use Method::Cached::Manager;
 use Method::Cached::KeyRule;
 
-our $VERSION = '0.05';
+our $VERSION = '0.051';
 
 sub import {
     my $class  = shift;

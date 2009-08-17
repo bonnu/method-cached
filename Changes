@@ -1,6 +1,6 @@
 Revision history for Perl extension Method::Cached
 
-0.05    Mon, 17 Aug 2009 12:11:05 +0900
+0.051   Mon, 17 Aug 2009 12:11:05 +0900
         - The manager is made to put the management of cache
         - The name of parameter passed when domain is set is changed:
             storage_class ==> class
