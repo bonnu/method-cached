@@ -4,17 +4,12 @@ use strict;
 use warnings;
 use Carp qw/croak confess/;
 use UNIVERSAL::require;
+use Method::Cached::KeyRule;
 
 my %DOMAIN;
 my %METHOD;
 my $DEFAULT_DOMAIN = { class  => 'Cache::FastMmap' };
 my %ATTR_PARSER    = ( Cached => \&_parse_attr_args );
-
-{
-    no warnings 'once';
-    *set_domain = \&set_domain_setting;
-    *get_domain = \&get_domain_setting;
-}
 
 sub import {
     my ($class, %args) = @_;
@@ -35,49 +30,14 @@ sub import {
     }
 }
 
-sub set_method_setting {
-    my ($class, $name, $attr, @args) = @_;
-    my $parser_sub = _get_attr_parser($attr);
-    my ($domain, $expires, $key_rule, %extend) = $parser_sub->(@args);
-    $METHOD{$name} = {
-        domain   => $domain,
-        expires  => $expires,
-        key_rule => $key_rule,
-        %extend,
-    };
+sub set_domain {
+    my $class = shift;
+    set_domain_setting(@_);
 }
 
-sub get_method_setting {
-    my ($class, $name) = @_;
-    return $METHOD{$name};
-}
-
-sub exists_method_setting {
-    my ($class, $name) = @_;
-    return exists $METHOD{$name};
-}
-
-sub set_domain_setting {
-    my ($class, %args) = @_;
-    for my $name (keys %args) {
-        my $args = $args{$name};
-        if (exists $DOMAIN{$name}) {
-            warn 'This domain has already been defined: ' . $name;
-            next;
-        }
-        $DOMAIN{$name} = $args;
-        _inspect_storage_class($DOMAIN{$name}->{class});
-    }
-}
-
-sub get_domain_setting {
-    my ($class, $domain) = @_;
-    return exists $DOMAIN{$domain} ? $DOMAIN{$domain} : $class->default_domain;
-}
-
-sub exists_domain {
-    my ($class, $domain) = @_;
-    return exists $DOMAIN{$domain};
+sub get_domain {
+    my $class = shift;
+    get_domain_setting(@_);
 }
 
 sub default_domain {
@@ -93,6 +53,19 @@ sub default_domain {
     return $DEFAULT_DOMAIN;
 }
 
+sub get_key {
+    my ($class, $name) = splice @_, 0, 2;
+    my $method = get_method_setting($name);
+    my $domain = get_domain_setting($method->{domain});
+    my $rule   = $method->{key_rule} || $domain->{key_rule};
+    return Method::Cached::KeyRule::regularize($rule, $name, [ @_ ]);
+}
+
+sub get_context_key {
+    my $warray = splice @_, 2, 1;
+    return get_key(@_) . _context_suffix($warray ? 1 : 0);
+}
+
 sub get_instance {
     my ($class, $domain) = @_;
     $domain->{instance} && return $domain->{instance};
@@ -103,25 +76,70 @@ sub get_instance {
 
 sub delete {
     my ($class, $name) = splice @_, 0, 2;
-    unless ($class->exists_method_setting($name)) {
+    unless (exists_method_setting($name)) {
         if ($name =~ /^(.*)::[^:]*$/) {
             my $package = $1;
             $package->require || confess "Can't load module: $package";
         }
     }
-    if ($class->exists_method_setting($name)) {
-        my $method  = $class->get_method_setting($name);
-        my $domain  = $class->get_domain_setting($method->{domain});
-        my $rule    = $method->{key_rule} || $domain->{key_rule};
-        my $key     = Method::Cached::KeyRule::regularize($rule, $name, [ @_ ]);
+    if (exists_method_setting($name)) {
+        my $method  = get_method_setting($name);
+        my $domain  = get_domain_setting($method->{domain});
         my $cache   = $class->get_instance($domain);
+        my $key     = $class->get_key($name, @_);
         my $del_sub = $cache->can('delete') || $cache->can('clear');
-        $del_sub->($cache, $key . $_) for qw/ :l :s /;
+        my @suffix  = _context_suffix();
+        $del_sub->($cache, $key . $_) for @suffix;
     }
 }
 
+sub set_method_setting {
+    my ($name, $attr, @args) = @_;
+    my $parser_sub = _get_attr_parser($attr);
+    my ($domain, $expires, $key_rule, %extend) = $parser_sub->(@args);
+    $METHOD{$name} = {
+        domain   => $domain,
+        expires  => $expires,
+        key_rule => $key_rule,
+        %extend,
+    };
+}
+
+sub get_method_setting {
+    my ($name) = @_;
+    return $METHOD{$name};
+}
+
+sub exists_method_setting {
+    my ($name) = @_;
+    return exists $METHOD{$name};
+}
+
+sub set_domain_setting {
+    my (%args) = @_;
+    for my $name (keys %args) {
+        my $args = $args{$name};
+        if (exists $DOMAIN{$name}) {
+            warn 'This domain has already been defined: ' . $name;
+            next;
+        }
+        $DOMAIN{$name} = $args;
+        _inspect_storage_class($DOMAIN{$name}->{class});
+    }
+}
+
+sub get_domain_setting {
+    my ($domain) = @_;
+    return exists $DOMAIN{$domain} ? $DOMAIN{$domain} : default_domain();
+}
+
+sub exists_domain {
+    my ($domain) = @_;
+    return exists $DOMAIN{$domain};
+}
+
 sub set_attr_parser {
-    my ($class, $attr, $parser) = @_;
+    my ($attr, $parser) = @_;
     $ATTR_PARSER{$attr} = $parser;
 }
 
@@ -148,6 +166,11 @@ sub _parse_attr_args {
     return ($domain, $expires, $key_rule);
 }
 
+sub _context_suffix {
+    my @context = qw/ :s :l /;
+    defined $_[0] ? $context[$_[0]] : @context;
+}
+
 sub _inspect_storage_class {
     my $any_class = shift;
     my $invalid;
@@ -172,31 +195,19 @@ Method::Cached::Manager - Storage for cache used in Method::Cached is managed
 
 In beginning logic or the start-up script:
 
- use Method::Cached::Manager;
- 
- Method::Cached::Manager->default_domain({
-     class => 'Cache::FastMmap',
- });
- 
- Method::Cached::Manager->set_domain(
-     'some-namespace' => {
-         class => 'Cache::Memcached::Fast',
-         args  => [
-             {
-                 # Parameter of constructor of class that uses it for cashe
-                 servers => [ '192.168.254.2:11211', '192.168.254.3:11211' ],
-                 ...
-             },
-         ],
-     },
- );
- 
- or
- 
  use Method::Cached::Manager
      -default => { class => 'Cache::FastMmap' },
      -domains => {
-         'some-namespace' => { class => 'Cache::Memcached::Fast', args => [ ... ] },
+         'some-namespace' => {
+             class => 'Cache::Memcached::Fast',
+             args  => [
+                 {
+                     # Parameter of constructor of class that uses it for cashe
+                     servers => [ '192.168.254.2:11211', '192.168.254.3:11211' ],
+                     ...
+                 },
+             ],
+         },
      },
  ;
 
@@ -214,12 +225,6 @@ This setting is shared on memory management in perl.
 =over 4
 
 =item B<import ('-default' =E<gt> {}, '-domains' =E<gt> {})>
-
-=item B<default_domain ( { class =E<gt> CLASS_NAME, args =E<gt> CLASS_ARGS } )>
-
-=item B<set_domain ( DOMAIN_NAME =E<gt> { class =E<gt> CLASS_NAME, args =E<gt> CLASS_ARGS } )>
-
-=item B<get_domain ( DOMAIN_NAME )>
 
 =item B<delete ( METHOD_FQN, METHOD_ARGS [, ...] )>
 
@@ -239,6 +244,12 @@ To erase a cache of this method:
      'Foo::Bar::foo_bar',       # fqn
      (args1 => 1, args2 => 2),  # hash-args
  );
+
+=back
+
+=head1 FUNCTIONS
+
+=over 4
 
 =back
 
