@@ -30,7 +30,7 @@ sub Cached :ATTR_SUB {
         local \$SIG{__WARN__} = sub{ die };
         ($args_code)
 __EVAL__
-    Method::Cached::Manager::set_method_setting($name, $attr, @args);
+    Method::Cached::Manager->set_method_setting($name, $attr, @args);
     {
         no strict 'refs';
         no warnings 'redefine';
@@ -47,14 +47,16 @@ __EVAL__
 
     sub _wrapper {
         my ($name, $code_ref, $warray) = splice @_, 0, 3;
-        my $method = Method::Cached::Manager::get_method_setting($name);
-        my $domain = Method::Cached::Manager::get_domain_setting($method->{domain});
+        my $method = Method::Cached::Manager->get_method_setting($name);
+        my $domain = Method::Cached::Manager->get_domain_setting($method->{domain});
+        my $rule   = $method->{key_rule} || $domain->{key_rule};
+        my $key    = Method::Cached::KeyRule::regularize($rule, $name, [ @_ ]);
+        my $key_f  = $key . ($warray ? ':l' : ':s');
         my $cache  = Method::Cached::Manager->get_instance($domain);
-        my $key    = Method::Cached::Manager->get_context_key($name, $warray, @_);
-        my $ret    = $cache->get($key);
+        my $ret    = $cache->get($key_f);
         unless ($ret) {
             $ret = [ $warray ? $code_ref->(@_) : scalar $code_ref->(@_) ];
-            $cache->set($key, $ret, $method->{expires} || 0);
+            $cache->set($key_f, $ret, $method->{expires} || 0);
         }
         return $warray ? @{ $ret } : $ret->[0];
     }
@@ -151,18 +153,6 @@ When the domain name is omitted, the domain of default is used.
 =item B<SERIALIZE>
 
 =item B<SELF_CODED>
-
-=back
-
-=head1 METHODS
-
-=over 4
-
-=item B<default_domain ($setting)>
-
-=item B<set_domain (%domain_settings)>
-
-=item B<get_domain ($domain_name)>
 
 =back
 
