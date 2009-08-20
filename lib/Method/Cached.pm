@@ -156,18 +156,6 @@ When the domain name is omitted, the domain of default is used.
 
 =back
 
-=head1 METHODS
-
-=over 4
-
-=item B<default_domain ($setting)>
-
-=item B<set_domain (%domain_settings)>
-
-=item B<get_domain ($domain_name)>
-
-=back
-
 =head1 AUTHOR
 
 Satoshi Ohkubo E<lt>s.ohkubo@gmail.comE<gt>
