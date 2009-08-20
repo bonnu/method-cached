@@ -12,12 +12,11 @@ our $VERSION = '0.051';
 sub import {
     my $class  = shift;
     my $caller = caller 0;
-    return unless $class eq __PACKAGE__;
-    return if $caller->isa(__PACKAGE__);
-    {
+    if ($class eq __PACKAGE__ && not $caller->isa(__PACKAGE__)) {
         no strict 'refs';
         push @{$caller . '::ISA'}, __PACKAGE__;
     }
+    Method::Cached::KeyRule->export_to_level(1, @_);
 }
 
 sub Cached :ATTR_SUB {
@@ -137,6 +136,8 @@ When the domain name is omitted, the domain of default is used.
 =item B<LIST>
 
 =item B<HASH>
+
+=item B<HASH_KEYS>
 
 =item B<SELF_SHIFT>
 

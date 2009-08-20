@@ -17,6 +17,16 @@ sub export_rule {
     }
 }
 
+sub export_rule_generator {
+    my $class = shift;
+    no strict 'refs';
+    no warnings 'redefine';
+    for my $rule (@_) {
+        push @{$class . '::EXPORT'},    $rule;
+        push @{$class . '::EXPORT_OK'}, $rule;
+    }
+}
+
 1;
 
 __END__
