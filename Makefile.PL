@@ -21,6 +21,5 @@ while (my ($key, $val) = each %requires) {
 }
 
 build_requires 'Test::More';
-use_test_base;
 auto_include;
 WriteAll;
