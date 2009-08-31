@@ -64,7 +64,7 @@ sub HASH_KEYS {
         local $^W = 0;
         my ($ser, %hash) = (q{}, @{$args});
         map {
-            $ser .= '|' . $_ . (defined $hash{$_} ? '=' . $hash{$_} : q{})
+            $ser .= chr(28) . $_ . (defined $hash{$_} ? '=' . $hash{$_} : q{})
         } @keys;
         $method_name . $ser;
     }
